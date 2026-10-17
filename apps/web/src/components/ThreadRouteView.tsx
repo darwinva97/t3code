@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import ChatView from "./ChatView";
+import { ThreadTabs } from "./ThreadTabs";
 import { resolveDraftPromotionNavigationTarget, threadHasStarted } from "./ChatView.logic";
 import { waitForDraftHeroTransition } from "./chat/draftHeroTransition";
 import { SidebarInset } from "./ui/sidebar";
@@ -23,6 +24,7 @@ import {
   resolveThreadRouteRenderState,
   type ThreadRouteTarget,
 } from "../threadRoutes";
+import { useThreadTabsStore } from "../threadTabsStore";
 
 /**
  * The single chat surface behind both `/draft/$draftId` and
@@ -165,6 +167,12 @@ export function ThreadRouteView({ target }: { target: ThreadRouteTarget }) {
     finalizePromotedDraftThreadByRef(target.threadRef);
   }, [draftThread, serverThreadStarted, target]);
 
+  const visitTab = useThreadTabsStore((state) => state.visit);
+  const tabRef = target.kind === "server" && renderState === "ready" ? target.threadRef : null;
+  useEffect(() => {
+    if (tabRef) visitTab(tabRef);
+  }, [tabRef, visitTab]);
+
   let view: React.ReactNode = null;
   if (target.kind === "draft") {
     if (draftSession) {
@@ -192,7 +200,11 @@ export function ThreadRouteView({ target }: { target: ThreadRouteTarget }) {
 
   return (
     <SidebarInset className="h-svh min-h-0 overflow-hidden overscroll-y-none md:h-dvh">
-      {view}
+      <ThreadTabs
+        activeRef={target.kind === "server" ? target.threadRef : null}
+        draftActive={target.kind === "draft"}
+      />
+      <div className="flex min-h-0 flex-1 flex-col">{view}</div>
     </SidebarInset>
   );
 }
