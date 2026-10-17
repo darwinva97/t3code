@@ -5,6 +5,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { restrictToFirstScrollableAncestor, restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
 import { MessageSquareIcon, PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, type MouseEvent as ReactMouseEvent } from "react";
@@ -16,7 +17,14 @@ import { useHandleNewThread } from "~/hooks/useHandleNewThread";
 import { startNewThreadFromContext } from "~/lib/chatThreadActions";
 import { cn } from "~/lib/utils";
 import { readLocalApi } from "~/localApi";
+import { isElectron } from "~/env";
+import { isCommandPaletteOpen } from "~/commandPaletteBus";
+import { resolveShortcutCommand, threadTraversalDirectionFromCommand } from "~/keybindings";
+import { isTerminalFocused } from "~/lib/terminalFocus";
+import { isModelPickerOpen } from "~/modelPickerVisibility";
+import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useThreadShell } from "~/state/entities";
+import { adjacentThreadTab } from "~/threadTabs.logic";
 import { buildThreadRouteParams } from "~/threadRoutes";
 import { useThreadTabsStore } from "~/threadTabsStore";
 import { ThreadStatusLabel } from "./ThreadStatusIndicators";
@@ -74,6 +82,35 @@ export function ThreadTabs({
     },
     [move, tabKeys],
   );
+
+  // Con pestañas abiertas, thread.previous / thread.next (⌘⇧[ y ⌘⇧], como en el navegador)
+  // las recorren. Se escucha en captura y se marca el evento, así la barra lateral, que
+  // ignora eventos ya atendidos, sólo navega por su orden cuando no hay pestañas.
+  const keybindings = useAtomValue(primaryServerKeybindingsAtom);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isCommandPaletteOpen() || isModelPickerOpen())
+        return;
+      const command = resolveShortcutCommand(event, keybindings, {
+        platform: navigator.platform,
+        context: {
+          terminalFocus: isTerminalFocused(),
+          modelPickerOpen: false,
+          isWeb: !isElectron,
+          isDesktop: isElectron,
+        },
+      });
+      const direction = threadTraversalDirectionFromCommand(command);
+      if (!direction) return;
+      const target = adjacentThreadTab(useThreadTabsStore.getState().tabs, activeRef, direction);
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      goTo(target);
+    };
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [activeRef, goTo, keybindings]);
 
   const startNewChat = useCallback(() => {
     void startNewThreadFromContext({

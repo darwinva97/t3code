@@ -54,3 +54,20 @@ export function moveThreadTab(
   if (moved) next.splice(to, 0, moved);
   return next;
 }
+
+/**
+ * Pestaña vecina para `thread.previous` / `thread.next`, dando la vuelta en los extremos.
+ * Null si no hay al menos dos pestañas o la activa no es una de ellas: entonces manda
+ * el orden de la barra lateral.
+ */
+export function adjacentThreadTab(
+  tabs: ReadonlyArray<ScopedThreadRef>,
+  active: ScopedThreadRef | null,
+  direction: "previous" | "next",
+): ScopedThreadRef | null {
+  if (!active || tabs.length < 2) return null;
+  const index = tabs.findIndex((tab) => sameRef(tab, active));
+  if (index === -1) return null;
+  const step = direction === "next" ? 1 : -1;
+  return tabs[(index + step + tabs.length) % tabs.length] ?? null;
+}

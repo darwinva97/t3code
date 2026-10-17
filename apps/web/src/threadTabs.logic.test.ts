@@ -2,7 +2,13 @@ import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
-import { MAX_THREAD_TABS, closeThreadTab, moveThreadTab, openThreadTab } from "./threadTabs.logic";
+import {
+  MAX_THREAD_TABS,
+  adjacentThreadTab,
+  closeThreadTab,
+  moveThreadTab,
+  openThreadTab,
+} from "./threadTabs.logic";
 
 const ref = (threadId: string, environmentId = "env") =>
   scopeThreadRef(environmentId as EnvironmentId, threadId as ThreadId);
@@ -46,5 +52,15 @@ describe("moveThreadTab", () => {
     const tabs = [ref("a"), ref("b"), ref("c")];
     expect(ids(moveThreadTab(tabs, 0, 2))).toEqual(["b", "c", "a"]);
     expect(moveThreadTab(tabs, 0, 5)).toBe(tabs);
+  });
+});
+
+describe("adjacentThreadTab", () => {
+  it("recorre las pestañas dando la vuelta y cede a la barra lateral si no aplica", () => {
+    const tabs = [ref("a"), ref("b"), ref("c")];
+    expect(adjacentThreadTab(tabs, ref("c"), "next")?.threadId).toBe("a");
+    expect(adjacentThreadTab(tabs, ref("a"), "previous")?.threadId).toBe("c");
+    expect(adjacentThreadTab(tabs, ref("x"), "next")).toBeNull();
+    expect(adjacentThreadTab([ref("a")], ref("a"), "next")).toBeNull();
   });
 });
