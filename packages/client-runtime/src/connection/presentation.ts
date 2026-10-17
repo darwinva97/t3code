@@ -1,6 +1,7 @@
 import type { ServerConfig } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 
+import { environmentEndpointPath } from "../environment/endpoint.ts";
 import type { ConnectionCatalogEntry } from "./catalog.ts";
 import type { ConnectionTarget, SupervisorConnectionState } from "./model.ts";
 import { connectionRouteId, connectionRoutes, routeHttpBaseUrl } from "./routes.ts";
@@ -128,7 +129,7 @@ function mcpUrlFromBase(httpBaseUrl: string): string | null {
   } catch {
     return null;
   }
-  url.pathname = "/mcp";
+  url.pathname = environmentEndpointPath(httpBaseUrl, "/mcp");
   url.search = "";
   url.hash = "";
   return url.toString();

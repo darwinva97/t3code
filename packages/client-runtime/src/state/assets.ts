@@ -20,6 +20,7 @@ import * as Schema from "effect/Schema";
 import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
 
 import * as EnvironmentRegistry from "../connection/registry.ts";
+import { environmentEndpointPath } from "../environment/endpoint.ts";
 import * as EnvironmentSupervisor from "../connection/supervisor.ts";
 import { request } from "../rpc/client.ts";
 import type { ProjectFaviconCache, ProjectFaviconTarget } from "../projectFaviconCache.ts";
@@ -57,7 +58,12 @@ export function parseAssetCollectionKey(
 
 export function resolveAssetUrl(httpBaseUrl: string, relativeUrl: string): string | null {
   try {
-    return new URL(relativeUrl, httpBaseUrl).toString();
+    // The server signs root paths; keep a base URL's prefix (see environmentEndpointPath).
+    const path = relativeUrl.startsWith("/") && !relativeUrl.startsWith("//");
+    return new URL(
+      path ? environmentEndpointPath(httpBaseUrl, relativeUrl) : relativeUrl,
+      httpBaseUrl,
+    ).toString();
   } catch {
     return null;
   }
@@ -173,7 +179,10 @@ export function createAssetEnvironmentAtoms<R, E>(
       request(WS_METHODS.assetsCreateUrl, input),
     );
     // Callers resolve against the thread's server, so preserve the local server's origin.
-    return { ...asset, relativeUrl: new URL(asset.relativeUrl, local.httpBaseUrl).href };
+    return {
+      ...asset,
+      relativeUrl: resolveAssetUrl(local.httpBaseUrl, asset.relativeUrl) ?? asset.relativeUrl,
+    };
   });
   const createUrl = createEnvironmentQueryAtomFamily(runtime, {
     label: "environment-data:assets:create-url",

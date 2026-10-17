@@ -4,6 +4,7 @@ import {
   classifyHostedHttpsCompatibility,
   createAdvertisedEndpoint,
   deriveWsBaseUrl,
+  environmentEndpointUrl,
   normalizeHttpBaseUrl,
 } from "./endpoint.ts";
 
@@ -57,5 +58,19 @@ describe("advertised endpoint helpers", () => {
       status: "available",
       isDefault: true,
     });
+  });
+});
+
+describe("environmentEndpointUrl", () => {
+  it("keeps the path prefix an environment is served under", () => {
+    expect(environmentEndpointUrl("https://host.example/", "/api/auth/session")).toBe(
+      "https://host.example/api/auth/session",
+    );
+    expect(environmentEndpointUrl("https://chat.example/ana/", "/oauth/token")).toBe(
+      "https://chat.example/ana/oauth/token",
+    );
+    expect(environmentEndpointUrl("https://chat.example/ana", "/api/device-hub")).toBe(
+      "https://chat.example/ana/api/device-hub",
+    );
   });
 });

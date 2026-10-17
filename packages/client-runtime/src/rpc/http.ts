@@ -18,6 +18,8 @@ import * as Schema from "effect/Schema";
 import { FetchHttpClient, HttpClient, HttpClientError } from "effect/http";
 import * as HttpApiClient from "effect/http-api/HttpApiClient";
 
+import { environmentEndpointPath } from "../environment/endpoint.ts";
+
 const isEnvironmentHttpCommonError = Schema.is(EnvironmentHttpCommonError);
 
 export class RemoteEnvironmentAuthFetchError extends Data.TaggedError(
@@ -88,7 +90,7 @@ export const layerRemoteHttpClient = (
 
 const remoteApiBaseUrl = (httpBaseUrl: string): string => {
   const url = new URL(httpBaseUrl);
-  url.pathname = "/";
+  url.pathname = environmentEndpointPath(httpBaseUrl, "/");
   url.search = "";
   url.hash = "";
   return url.toString();

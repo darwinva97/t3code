@@ -1,6 +1,8 @@
 import type { ScheduledTaskWebhookEndpoint } from "@t3tools/contracts";
 import { isLocalLoopbackHost } from "@t3tools/shared/hostClassification";
 
+import { environmentEndpointPath } from "./environment/endpoint.ts";
+
 /**
  * Where a sender can call a webhook task, as a client shows it. With T3
  * Connect the server returns a public URL; without it the path is resolved on
@@ -29,7 +31,12 @@ export function webhookAddress(
       note: "Link this environment to T3 Connect for a public URL.",
     };
   }
-  const url = new URL(endpoint.path, httpBaseUrl);
+  const url = new URL(
+    endpoint.path.startsWith("/")
+      ? environmentEndpointPath(httpBaseUrl, endpoint.path)
+      : endpoint.path,
+    httpBaseUrl,
+  );
   return {
     address: url.href,
     copyable: true,

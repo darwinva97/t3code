@@ -196,6 +196,7 @@ import {
 } from "../ServerUpdateAction";
 import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
 import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
+import { withBasePath } from "../../basePath";
 import {
   resolveShortcutCommand,
   shortcutLabelForCommand,
@@ -524,7 +525,7 @@ function resolveAdvertisedEndpointPairingUrl(
 }
 
 function resolveCurrentOriginPairingUrl(credential: string): string {
-  const url = new URL("/pair", window.location.href);
+  const url = new URL(withBasePath("/pair"), window.location.href);
   return setPairingTokenOnUrl(url, credential).toString();
 }
 

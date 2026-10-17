@@ -21,6 +21,7 @@ import {
 
 import { PrimaryEnvironmentHttpClient } from "./httpClient";
 import { runPrimaryHttp } from "../../lib/runtime";
+import { stripBasePath } from "../../basePath";
 
 const PrimaryEnvironmentRequestOperation = Schema.Literals([
   "fetch-session-state",
@@ -434,7 +435,7 @@ export async function resolveInitialServerAuthGateState(): Promise<ServerAuthGat
   // An explicit pairing link replaces this browser's grant, even when the
   // current cookie or a cached gate already authenticates it. Keep that intent
   // after stripping the token, which causes the router to load this gate again.
-  if (window.location.pathname.replace(/\/+$/, "") !== "/pair") {
+  if (stripBasePath(window.location.pathname).replace(/\/+$/, "") !== "/pair") {
     explicitPairingRequested = false;
   } else if (peekPairingTokenFromUrl()) {
     explicitPairingRequested = true;

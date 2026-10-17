@@ -1,6 +1,7 @@
 import { PRIMARY_LOCAL_ENVIRONMENT_ID, type DesktopEnvironmentBootstrap } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 
+import { appBasePath, withBasePath } from "../../basePath";
 import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 
 const PrimaryEnvironmentTargetSource = Schema.Literals([
@@ -225,12 +226,19 @@ function resolveConfiguredPrimaryTarget(): PrimaryEnvironmentTarget | null {
 }
 
 function resolveWindowOriginPrimaryTarget(): PrimaryEnvironmentTarget {
+  // Under a path prefix the server lives there too (see basePath.ts). A socket
+  // base with a path is taken as the full socket URL, so it names `ws` itself.
+  const basePath = appBasePath();
   const url = parseTargetUrl({
-    rawValue: window.location.origin,
+    rawValue: basePath,
+    baseUrl: window.location.origin,
     source: "window-origin",
     urlKind: "http-base-url",
   });
   const httpBaseUrl = url.toString();
+  if (basePath !== "/") {
+    url.pathname = withBasePath("/ws", basePath);
+  }
   if (url.protocol === "http:") {
     url.protocol = "ws:";
   } else if (url.protocol === "https:") {
@@ -296,7 +304,7 @@ export function resolvePrimaryEnvironmentHttpUrl(
     source: primaryTarget.source,
     urlKind: "http-base-url",
   });
-  url.pathname = pathname;
+  url.pathname = withBasePath(pathname, url.pathname);
   if (searchParams) {
     url.search = new URLSearchParams(searchParams).toString();
   }

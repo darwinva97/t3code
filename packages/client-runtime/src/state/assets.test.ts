@@ -35,7 +35,22 @@ import {
   createProjectFaviconUrlAtomFamily,
   InvalidAssetCollectionKeyError,
   parseAssetCollectionKey,
+  resolveAssetUrl,
 } from "./assets.ts";
+
+describe("resolveAssetUrl", () => {
+  it("resolves signed root paths under the environment's path prefix", () => {
+    expect(resolveAssetUrl("https://host.example/", "/api/assets/t/a.png")).toBe(
+      "https://host.example/api/assets/t/a.png",
+    );
+    expect(resolveAssetUrl("https://chat.example/ana/", "/api/assets/t/a.png")).toBe(
+      "https://chat.example/ana/api/assets/t/a.png",
+    );
+    expect(
+      resolveAssetUrl("https://chat.example/ana/", "https://other.example/api/assets/t/a.png"),
+    ).toBe("https://other.example/api/assets/t/a.png");
+  });
+});
 
 describe("asset collection keys", () => {
   it("preserves malformed JSON and its native cause", () => {

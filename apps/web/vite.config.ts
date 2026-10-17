@@ -156,10 +156,35 @@ const configuredAllowedHosts = (process.env.T3CODE_DEV_ALLOWED_HOSTS ?? "")
   .filter((entry) => entry.length > 0);
 const allowedHosts = [".ts.net", ...configuredAllowedHosts];
 
+// One static build that serves every environment under its own path prefix
+// (`https://host/<env>/`). Assets become relative to a <base> element that a
+// tiny head script derives from the first path segment before anything loads;
+// src/basePath.ts reads the same element for the router and server URLs.
+const basePathMode = process.env.T3CODE_WEB_BASE_PATH?.trim() || "";
+if (basePathMode !== "" && basePathMode !== "first-segment") {
+  throw new Error(`T3CODE_WEB_BASE_PATH must be "first-segment" or unset, got "${basePathMode}"`);
+}
+
+function firstSegmentBasePathPlugin(): Plugin {
+  return {
+    name: "t3code:first-segment-base-path",
+    apply: "build",
+    transformIndexHtml: () => [
+      {
+        tag: "script",
+        injectTo: "head-prepend",
+        children: `(()=>{const m=/^\\/([A-Za-z0-9._~-]+)\\//.exec(location.pathname);if(!m)return;const b=document.createElement("base");b.href="/"+m[1]+"/";b.setAttribute("data-t3-base-path","");document.head.prepend(b)})()`,
+      },
+    ],
+  };
+}
+
 export default defineConfig(() => {
   return {
     assetsInclude: ["**/*.wasm"],
+    ...(basePathMode === "first-segment" ? { base: "./" } : {}),
     plugins: [
+      ...(basePathMode === "first-segment" ? [firstSegmentBasePathPlugin()] : []),
       devCompressionPlugin(),
       thirdPartyLicensesPlugin({
         bundleName: "web",
